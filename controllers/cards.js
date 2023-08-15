@@ -12,7 +12,7 @@ module.exports.addCard = (req, res) => {
     .then((card) => {
       Card.findById(card._id)
         .populate('owner')
-        .then((data) => res.send(data))
+        .then((data) => res.status(201).send(data))
         .catch(() => res.status(DocumentNotFoundError).send({ message: 'Карточка по ID не найдена.' }));
     })
     .catch((err) => {
