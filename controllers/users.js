@@ -111,7 +111,9 @@ const editUser = (req, res, next) => {
 
 const editAvatar = (req, res, next) => {
   const { avatar } = req.body;
-  res.status(BadRequest).send({ message: 'Переданы некорректные данные при обновлении аватара.' });
+  if (!avatar) {
+    throw new BadRequest('Переданы некорректные данные при обновлении аватара.');
+  }
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
