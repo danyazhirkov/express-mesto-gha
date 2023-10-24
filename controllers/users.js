@@ -6,7 +6,7 @@ const BadRequest = require('../errors/BadRequest');
 const NotFound = require('../errors/NotFound');
 
 const ConflictError = require('../errors/ConflictError');
-const newError = require('../middlewares/newError');
+// const newError = require('../middlewares/newError');
 
 const NotError = 200;
 
@@ -65,7 +65,8 @@ const getUserInfo = (req, res, next) => {
 
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        return newError(NotFound, req, res);
+        // return newError(NotFound, req, res);
+        next(new BadRequest('Ошибка: Неверные данные'));
       }
 
       return next(err);
@@ -96,13 +97,13 @@ const editUser = (req, res, next) => {
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
-        return res.status(NotFound).send({ message: ' Переданы некорректные данные при обновлении профиля.' });
+        throw new BadRequest('Переданы некорректные данные при обновлении профиля.');
       }
       return res.status(NotError).send({ data: user });
     })
     .catch((error) => {
       if (error.name === 'ValidationError') {
-        return res.status(BadRequest).send({ message: 'Пользователь с указанным _id не найден.' });
+        throw new BadRequest('Пользователь с указанным _id не найден.');
       }
       return next(error);
     });
@@ -110,19 +111,17 @@ const editUser = (req, res, next) => {
 
 const editAvatar = (req, res, next) => {
   const { avatar } = req.body;
-  if (!avatar) {
-    res.status(BadRequest).send({ message: ' Переданы некорректные данные при обновлении аватара.' });
-  }
+  res.status(BadRequest).send({ message: 'Переданы некорректные данные при обновлении аватара.' });
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
-        return res.status(NotFound).send({ message: 'Пользователь с указанным _id не найден.' });
+        throw new NotFound('Пользователь с указанным _id не найден.');
       }
       return res.status(NotError).send({ data: user });
     })
     .catch((error) => {
       if (error.name === 'ValidationError') {
-        return res.status(BadRequest).send({ message: 'Ошибка: Неверные данные.' });
+        throw new BadRequest('Ошибка: Неверные данные.');
       }
       return next(error);
     });
