@@ -57,16 +57,14 @@ const login = (req, res, next) => {
 
 const getUserInfo = (req, res, next) => {
   const { _id } = req.user;
-  User.findById(_id)
-    .orFail()
+  User.findById(_id).orFail(() => new NotFound('Данных с указанным id не существует'))
     .then((user) => {
       res.status(NotError).send({ data: user });
     })
 
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        // return newError(NotFound, req, res);
-        next(new BadRequest('Ошибка: Неверные данные'));
+        return next(new BadRequest('Ошибка: Неверные данные'));
       }
 
       return next(err);
@@ -97,13 +95,13 @@ const editUser = (req, res, next) => {
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
-        throw new BadRequest('Переданы некорректные данные при обновлении профиля.');
+        throw new NotFound('Переданы некорректные данные при обновлении профиля.');
       }
       return res.status(NotError).send({ data: user });
     })
     .catch((error) => {
       if (error.name === 'ValidationError') {
-        throw new BadRequest('Пользователь с указанным _id не найден.');
+        next(new BadRequest('Пользователь с указанным _id не найден.'));
       }
       return next(error);
     });
@@ -111,19 +109,18 @@ const editUser = (req, res, next) => {
 
 const editAvatar = (req, res, next) => {
   const { avatar } = req.body;
-  if (!avatar) {
-    throw new BadRequest('Переданы некорректные данные при обновлении аватара.');
-  }
-  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
+  const userId = req.user._id;
+
+  User.findByIdAndUpdate(userId, { avatar }, {
+    new: true,
+    runValidators: true,
+  })
     .then((user) => {
-      if (!user) {
-        throw new NotFound('Пользователь с указанным _id не найден.');
-      }
-      return res.status(NotError).send({ data: user });
+      res.send({ data: user });
     })
     .catch((error) => {
       if (error.name === 'ValidationError') {
-        throw new BadRequest('Ошибка: Неверные данные.');
+        return next(new BadRequest('Переданы некорректные данные при обновлении аватара.'));
       }
       return next(error);
     });
